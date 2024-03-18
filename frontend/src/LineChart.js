@@ -8,8 +8,19 @@ const LineChart = () => {
   const up = (ctx, value) => ctx.p0.parsed.y < ctx.p1.parsed.y ? value : undefined;
 
   const updateChart = (chart, newData) => {
-    chart.data.labels = newData.labels;
-    chart.data.datasets[0].data = newData.datasets[0].data;
+    const maxDataPoints = 10; 
+    const currentData = chart.data.datasets[0].data;
+    const newDataValues = newData.datasets[0].data;
+
+    if (currentData.length >= maxDataPoints) {
+      // Remove oldest data points if exceeds the maximum
+      chart.data.labels.shift();
+      currentData.shift();
+    }
+
+    chart.data.labels.push(newData.labels[0]);
+    currentData.push(newDataValues[0]);
+
     chart.update();
   };
 
@@ -27,7 +38,6 @@ const LineChart = () => {
           label: 'Data',
           data: [],
           borderColor: 'rgb(149, 165, 166)',
-          backgroundColor: 'rgba(0, 0, 255, 0.1)',
           lineTension: 0.5,
           segment: {
             borderColor: ctx => down(ctx, 'rgb(192, 57, 43)') || up(ctx, 'rgb(22, 160, 133)') || up(ctx, 'rgb(149, 165, 166)'),
@@ -45,17 +55,17 @@ const LineChart = () => {
 
     const interval = setInterval(() => {
       const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0'); 
-      const seconds = String(now.getSeconds()).padStart(2, '0'); 
+      const hours = now.getHours() > 12 ? now.getHours() - 12 : now.getHours() === 0 ? 12 : now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
       const time = `${hours}:${minutes}:${seconds}`;
-      const value = Math.floor(Math.random() * 500); 
+      const value = Math.floor(Math.random() * 500);
 
       const newData = {
-        labels: [...chartInstance.current.data.labels, time].slice(-10),
+        labels: [time],
         datasets: [{
           ...chartInstance.current.data.datasets[0],
-          data: [...chartInstance.current.data.datasets[0].data, value].slice(-10),
+          data: [value],
         }],
       };
 
@@ -87,11 +97,24 @@ export default LineChart;
 // const LineChart = () => {
 //   const chartRef = useRef(null);
 //   const chartInstance = useRef(null);
+//   const down = (ctx, value) => ctx.p0.parsed.y > ctx.p1.parsed.y ? value : undefined;
+//   const up = (ctx, value) => ctx.p0.parsed.y < ctx.p1.parsed.y ? value : undefined;
 //   const [data, setData] = useState([]);
 
 //   const updateChart = (chart, newData) => {
-//     chart.data.labels = newData.labels;
-//     chart.data.datasets[0].data = newData.datasets[0].data;
+//     const maxDataPoints = 10; 
+//     const currentData = chart.data.datasets[0].data;
+//     const newDataValues = newData.datasets[0].data;
+
+//     if (currentData.length >= maxDataPoints) {
+//       // Remove oldest data points if exceeds the maximum
+//       chart.data.labels.shift();
+//       currentData.shift();
+//     }
+
+//     chart.data.labels.push(newData.labels[0]);
+//     currentData.push(newDataValues[0]);
+
 //     chart.update();
 //   };
 
@@ -122,8 +145,10 @@ export default LineChart;
 //           label: 'Data',
 //           data: [],
 //           borderColor: 'rgb(149, 165, 166)',
-//           backgroundColor: 'rgba(0, 0, 255, 0.1)',
 //           lineTension: 0.5,
+//           segment: {
+//             borderColor: ctx => down(ctx, 'rgb(192, 57, 43)') || up(ctx, 'rgb(22, 160, 133)') || up(ctx, 'rgb(149, 165, 166)'),
+//           }
 //         }]
 //       },
 //       options: {
@@ -150,10 +175,10 @@ export default LineChart;
 //   useEffect(() => {
 //     if (data.length > 0) {
 //       const newData = {
-//         labels: data.map(entry => entry.time), // Assuming your data has a 'time' field
+//         labels: data.map(entry => entry.time), // Assuming data has a 'time' field
 //         datasets: [{
 //           ...chartInstance.current.data.datasets[0],
-//           data: data.map(entry => entry.value), // Assuming your data has a 'value' field
+//           data: data.map(entry => entry.value), // Assuming data has a 'value' field
 //         }],
 //       };
 //       updateChart(chartInstance.current, newData);
