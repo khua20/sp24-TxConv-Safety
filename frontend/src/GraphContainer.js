@@ -1,11 +1,11 @@
 import React from 'react';
 import LineChart from './LineChart';
 
-const GraphContainer = ({ data }) => {
+const GraphContainer = () => {
   return (
     <div className="graph-container">
       <h2>Real-time Line Chart</h2>
-      <LineChart data={data} />
+      <LineChart />
     </div>
   );
 };
