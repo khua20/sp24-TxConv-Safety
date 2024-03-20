@@ -3,9 +3,10 @@
 #include <esp_now.h>
 #include <Arduino_JSON.h>
 #include "ESPAsyncWebServer.h"
+#include "Secrets.h" 
 
-const char* ssid = "utexas-iot";
-const char* password = "your-password"; 
+// const char* ssid = "utexas-iot";
+// const char* password = "your-password"; 
 
 AsyncWebServer server(80);
 
