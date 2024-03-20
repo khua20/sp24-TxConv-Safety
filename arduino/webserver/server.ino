@@ -23,6 +23,8 @@ void setup() {
         Serial.println("Connecting to WiFi...");
     }
     Serial.println("Connected to WiFi");
+    Serial.println("MAC address: ");
+    Serial.println(WiFi.macAddress());
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
 
