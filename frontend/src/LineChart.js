@@ -172,10 +172,19 @@ export default LineChart;
 //     };
 //   }, []);
 
+//   const formatTime = (timestamp) => {
+//     const date = new Date(timestamp);
+//     const hours = date.getHours() > 12 ? date.getHours() - 12 : date.getHours();
+//     const minutes = String(date.getMinutes()).padStart(2, '0');
+//     const seconds = String(date.getSeconds()).padStart(2, '0');
+//     const amPm = date.getHours() >= 12 ? 'PM' : 'AM';
+//     return `${hours}:${minutes}:${seconds} ${amPm}`;
+//   };
+
 //   useEffect(() => {
 //     if (data.length > 0) {
 //       const newData = {
-//         labels: data.map(entry => entry.time), // Assuming data has a 'time' field
+//         labels: data.map(entry => formatTime(entry.time)), // Assuming data has a 'time' field
 //         datasets: [{
 //           ...chartInstance.current.data.datasets[0],
 //           data: data.map(entry => entry.value), // Assuming data has a 'value' field

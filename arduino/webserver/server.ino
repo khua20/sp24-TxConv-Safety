@@ -14,7 +14,6 @@ AsyncWebServer server(80);
 const int sensorPin = A0;
 
 void setup() {
-    JSONVar data;
     Serial.begin(115200);
 
     // Connect to Wi-Fi network
@@ -31,8 +30,10 @@ void setup() {
     server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
         int sensorValue = analogRead(sensorPin);
         long timestamp = millis();
+
+        JSONVar data;
         data["time"] = timestamp;
-        data["sensorValue"] = sensorValue;
+        data["value"] = sensorValue;
         String jsonData = JSON.stringify(data);
         request->send(200, "application/json", jsonData);
     });
