@@ -1,0 +1,60 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include <esp_now.h>
+#include <Arduino_JSON.h>
+#include "ESPAsyncWebServer.h"
+
+
+const char* ssid = "utexas-iot";
+const char* password = "46608918652253881940";
+
+AsyncWebServer server(80);
+
+const int sensorPin = A0;
+
+void setup() {
+  // put your setup code here, to run once:
+  
+  Serial.begin(9600);
+  WiFi.begin(ssid, password);
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.print("/nWiFi connected at IP address");
+  Serial.println(WiFi.localIP());
+  pinMode(18, INPUT);
+
+  // Initialize web server
+    server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+        int sensorValue = analogRead(sensorPin);
+        long timestamp = millis();
+
+        JSONVar data;
+        data["time"] = timestamp;
+        data["value"] = sensorValue;
+        String jsonData = JSON.stringify(data);
+        request->send(200, "application/json", jsonData);
+    });
+
+    server.begin();
+    Serial.println("Web server started");
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  int valueAnalog = analogRead(sensorPin);
+  bool valueDigital = digitalRead(18);
+
+  float voltage = valueAnalog * (5.0/1023.0);
+
+  float alc = map(voltage, 0.1, 4.0, 0, 100);
+
+  // Serial.println(valueAnalog);
+  // Serial.println(valueDigital);
+  // // Serial.println(voltage);
+  // Serial.print(alc);
+  // Serial.println("ppm");
+  delay(1000);
+
+}
