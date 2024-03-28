@@ -14,7 +14,7 @@ AsyncWebServer server(80);
 const int sensorPin = A0;
 
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(9600);
 
     // Connect to Wi-Fi network
     WiFi.begin(ssid, password);
