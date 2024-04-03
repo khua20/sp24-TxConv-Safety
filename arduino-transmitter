@@ -1,0 +1,144 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include <esp_now.h>
+#include <Arduino_JSON.h>
+#include "ESPAsyncWebServer.h"
+
+
+const char* ssid = "utexas-iot";
+const char* password = "46608918652253881940";
+
+AsyncWebServer server(80);
+
+const int sensorPin = A0;
+
+//uint8_t mac = {};
+
+void setup() {
+  // put your setup code here, to run once:
+  
+  Serial.begin(9600);
+  WiFi.begin(ssid, password);
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.print("/nWiFi connected at IP address");
+  Serial.println(WiFi.localIP());
+  pinMode(18, INPUT);
+
+  // //Puts ESP in STATION MODE
+  // WiFi.mode(WIFI_STA);
+
+  // //Shows on the Serial Monitor the STATION MODE Mac Address of this ESP
+  // Serial.print("Mac Address in Station: "); 
+  // Serial.println(WiFi.macAddress());
+
+  // //Calls the function that will initialize the ESP-NOW protocol
+  // InitESPNow();
+
+  // //Registers the callback that will give us feedback about the sent data
+  // //The function that will be executed is called OnDataSent
+  // esp_now_register_send_cb(OnDataSent);
+
+
+  // //Calls the send function
+  // send();
+  // Initialize web server
+    server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+        int sensorValue = analogRead(sensorPin);
+        long timestamp = millis();
+
+        float voltage = sensorValue * (5.0/1023.0);
+
+      float alc = map(voltage, 0.1, 4.0, 0, 100);
+
+      Serial.print(alc);
+      Serial.println("ppm");
+
+        JSONVar data;
+        data["time"] = timestamp;
+        data["value"] = alc;
+        String jsonData = JSON.stringify(data);
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        
+       // request->send(200, "application/json", jsonData);
+       response->print(jsonData);
+       request->send(response);
+        
+    });
+
+    server.begin();
+    Serial.println("Web server started");
+}
+
+void InitESPNow() {
+  //If the initialization was successful
+  if (esp_now_init() == ESP_OK) {
+    Serial.println("ESPNow Init Success");
+  }
+  //If there was an error
+  else {
+    Serial.println("ESPNow Init Failed");
+    ESP.restart();
+  }
+}
+
+//Function that will read the gpios and send
+//the read values to the others ESPs
+void send(){
+
+  uint16_t sensorValue = analogRead(sensorPin)/4;
+  
+  //In this example we are going to use the broadcast address {0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF}
+  //to send the values to all Slaves.
+  //If you want to send to a specific Slave, you have to put its Mac Address on macAddr.
+  //If you want to send to more then one specific Slave you will need to create
+  //a "for loop" and call esp_now_send for each mac address on the macSlaves array
+  uint8_t macAddr[] = {0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF}; // change this to mac address
+  esp_err_t result = esp_now_send(macAddr, (uint8_t*) &sensorValue, sizeof(sensorValue));
+  Serial.print("Send Status: ");
+  //If it was successful
+  if (result == ESP_OK) {
+    Serial.println("Success");
+  }
+  //if it failed
+  else {
+    Serial.println("Error");
+  }
+}
+
+//Callback function that gives us feedback about the sent data
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  char macStr[18];
+  //Copies the receiver Mac Address to a string
+  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  //Prints it on Serial Monitor
+  Serial.print("Sent to: "); 
+  Serial.println(macStr);
+  //Prints if it was successful or not
+  Serial.print("Status: "); 
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
+  //Sends again
+  send();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  int valueAnalog = analogRead(sensorPin);
+  bool valueDigital = digitalRead(18);
+
+  float voltage = valueAnalog * (5.0/1023.0);
+
+  float alc = map(voltage, 0.1, 4.0, 0, 100);
+
+  // Serial.println(valueAnalog);
+  // Serial.println(valueDigital);
+  // // Serial.println(voltage);
+  // Serial.print(alc);
+  // Serial.println("ppm");
+  delay(1000);
+
+}
