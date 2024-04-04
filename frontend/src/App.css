@@ -21,6 +21,7 @@
   border-radius: 20px;
   overflow: hidden; 
   background-color: rgb(255, 255, 255);
+  box-shadow: 0 0 100px rgba(0, 0, 0, 1);
 }
 
 .line-chart-canvas {
@@ -54,7 +55,7 @@ nav {
 
 ul {
   list-style-type: none;
-  margin: 0 0 0 -85px;
+  margin: 0 0 0 -10px;
   padding: 0;
   display: flex;
   font-size: 15px;
@@ -62,6 +63,7 @@ ul {
 
 li {
   margin: 0 10px;
+  font-size: 16px;
 }
 
 a {
@@ -77,4 +79,16 @@ a:hover {
 .logo {
   color: white;
   font-size: 20px;
+  margin: 0 0 0 10px;
+}
+
+#icon {
+  position: relative;
+}
+
+.sign {
+  position: relative;
+  vertical-align: middle;
+  top: 2px;
+  /* top: .5vh; */
 }
