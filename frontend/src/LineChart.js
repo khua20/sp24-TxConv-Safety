@@ -6,35 +6,41 @@ const LineChart = () => {
   const chartInstance = useRef(null);
   const down = (ctx, value) => ctx.p0.parsed.y > ctx.p1.parsed.y ? value : undefined;
   const up = (ctx, value) => ctx.p0.parsed.y < ctx.p1.parsed.y ? value : undefined;
-  const [data, setData] = useState([]);
+  // const [data, setData] = useState([]);
 
-  const updateChart = (chart, newData) => {
-    const maxDataPoints = 10; 
-    const currentData = chart.data.datasets[0].data;
-    const newDataValues = newData.datasets[0].data;
+  // const updateChart = (chart, newData) => {
+  //   const maxDataPoints = 10; 
+  //   const currentData = chart.data.datasets[0].data;
+  //   const newDataValues = newData.datasets[0].data;
 
-    if (currentData.length >= maxDataPoints) {
-      chart.data.labels.shift();
-      currentData.shift();
-    }
+  //   if (currentData.length >= maxDataPoints) {
+  //     chart.data.labels.shift();
+  //     currentData.shift();
+  //   }
 
-    chart.data.labels.push(newData.labels[0]);
-    currentData.push(newDataValues[0]);
+  //   chart.data.labels.push(newData.labels[0]);
+  //   currentData.push(newDataValues[0]);
 
-    chart.update();
-  };
+  //   chart.update();
+  // };
 
   useEffect(() => {
     const fetchDataAndUpdateChart = async () => {
       try {
-        const response = await fetch('http://10.159.66.204/data');
+        const response = await fetch('http://10.159.64.115/data');  // Change IP address to match your server
         if (!response.ok) {
           throw new Error('Failed to fetch data');
         }
         const jsonData = await response.json();
         console.log('Data:', jsonData);
+
+        const currentTime = new Date();
+
+        // Format the time as hr:min:sec
+        const timeString = currentTime.getHours() + ":" + currentTime.getMinutes() + ":" + currentTime.getSeconds();
+
   
-        chartInstance.current.data.labels.push(jsonData.time);
+        chartInstance.current.data.labels.push(timeString);
         chartInstance.current.data.datasets[0].data.push(jsonData.value);
 
         if (chartInstance.current.data.labels.length > 10) {
