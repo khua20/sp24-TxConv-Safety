@@ -1,33 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Chart from 'chart.js/auto';
 
 const LineChart = () => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const dataQueue = useRef([]);
+  
   const down = (ctx, value) => ctx.p0.parsed.y > ctx.p1.parsed.y ? value : undefined;
   const up = (ctx, value) => ctx.p0.parsed.y < ctx.p1.parsed.y ? value : undefined;
-  // const [data, setData] = useState([]);
-
-  // const updateChart = (chart, newData) => {
-  //   const maxDataPoints = 10; 
-  //   const currentData = chart.data.datasets[0].data;
-  //   const newDataValues = newData.datasets[0].data;
-
-  //   if (currentData.length >= maxDataPoints) {
-  //     chart.data.labels.shift();
-  //     currentData.shift();
-  //   }
-
-  //   chart.data.labels.push(newData.labels[0]);
-  //   currentData.push(newDataValues[0]);
-
-  //   chart.update();
-  // };
 
   useEffect(() => {
     const fetchDataAndUpdateChart = async () => {
       try {
-        const response = await fetch('http://10.159.64.115/data');  // Change IP address to match your server
+        const response = await fetch('http://10.159.66.56/data');  // Change IP address to match your server
         if (!response.ok) {
           throw new Error('Failed to fetch data');
         }
@@ -37,26 +22,26 @@ const LineChart = () => {
         const currentTime = new Date();
 
         // Format the time as hr:min:sec
-        const timeString = currentTime.getHours() + ":" + currentTime.getMinutes() + ":" + currentTime.getSeconds();
+        const hours = currentTime.getHours();
+        const minutes = currentTime.getMinutes();
+        const seconds = currentTime.getSeconds();
+        const hoursIn12HourFormat = hours % 12 || 12;
+        const timeString = `${hoursIn12HourFormat}:${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+        dataQueue.current.push({ time: timeString, value: jsonData.value });
 
-  
-        chartInstance.current.data.labels.push(timeString);
-        chartInstance.current.data.datasets[0].data.push(jsonData.value);
-
-        if (chartInstance.current.data.labels.length > 10) {
-          chartInstance.current.data.labels.shift();
-          chartInstance.current.data.datasets[0].data.shift();
+        if (dataQueue.current.length > 10) {
+          dataQueue.current.shift();
         }
-  
-        chartInstance.current.update();
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
+
+        requestAnimationFrame(() => {
+          chartInstance.current.data.labels = dataQueue.current.map(entry => entry.time);
+          chartInstance.current.data.datasets[0].data = dataQueue.current.map(entry => entry.value);
+          chartInstance.current.update();
+        });
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
     };
-  
-    // if (chartInstance.current) {
-    //   chartInstance.current.destroy();
-    // }
   
     const ctx = chartRef.current.getContext('2d');
     chartInstance.current = new Chart(ctx, {
@@ -91,28 +76,6 @@ const LineChart = () => {
       }
     };
   }, []);
-
-  // const formatTime = (timestamp) => {
-  //   const date = new Date(timestamp);
-  //   const hours = date.getHours() > 12 ? date.getHours() - 12 : date.getHours();
-  //   const minutes = String(date.getMinutes()).padStart(2, '0');
-  //   const seconds = String(date.getSeconds()).padStart(2, '0');
-  //   const amPm = date.getHours() >= 12 ? 'PM' : 'AM';
-  //   return `${hours}:${minutes}:${seconds} ${amPm}`;
-  // };
-
-  // useEffect(() => {
-  //   if (data.length > 0) {
-  //     const newData = {
-  //       labels: data.map(entry => formatTime(entry.time)), // Assuming data has a 'time' field
-  //       datasets: [{
-  //         ...chartInstance.current.data.datasets[0],
-  //         data: data.map(entry => entry.value), // Assuming data has a 'value' field
-  //       }],
-  //     };
-  //     updateChart(chartInstance.current, newData);
-  //   }
-  // }, [data]);
 
   return (
     <div className="line-chart-container">
