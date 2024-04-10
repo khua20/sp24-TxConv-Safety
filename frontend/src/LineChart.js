@@ -67,7 +67,7 @@ const LineChart = () => {
       }
     });
   
-    const intervalId = setInterval(fetchDataAndUpdateChart, 1000);
+    const intervalId = setInterval(fetchDataAndUpdateChart, 2000);
   
     return () => {
       clearInterval(intervalId);
