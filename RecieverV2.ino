@@ -12,6 +12,11 @@
 const char* ssid = "utexas-iot";
 const char* password = "";
 
+const int LED = 23;
+const int buttonPin = 2;
+const int buttonState = 0;  // variable for reading the pushbutton status
+float alc;
+
 JSONVar board;
 AsyncWebServer server(80);
 AsyncEventSource events("/events");
@@ -29,18 +34,15 @@ esp_now_peer_info_t peerInfo;
 
 uint8_t broadcastAddress[] = {0x08, 0xD1, 0xF9, 0xE8, 0xF4, 0xA0 } ; 
 
-//I/O Pins
-const int LED = 7;
-const int buttonPin = 2;
-int buttonState = 0;  // variable for reading the pushbutton status
-
 //callback function that will be executed when data is received
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&myData, incomingData, sizeof(myData));
+  float voltage = myData.data * (5.0/1023.0);
+  alc = map(voltage, 0.1, 4.0, 0, 100);
   Serial.print("Bytes received: ");
   Serial.println(len);
   Serial.print("x: ");
-  Serial.println(myData.data);
+  Serial.println(alc);
   Serial.println(*mac);
 }
 
@@ -49,6 +51,9 @@ void setup() {
   //Initialize Serial Monitor
 
   Serial.begin(9600);
+  
+
+  pinMode(LED, OUTPUT);
   
   //Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
@@ -91,21 +96,14 @@ void setup() {
   Serial.println(WiFi.channel());
 
   */
-
-  pinMode(LED, OUTPUT);
-  pinMode(buttonPin, INPUT);
 }
  
 void loop() {
-  buttonState = digitalRead(buttonPin);
-  if(myData.data > 500){
-    if(buttonState == HIGH){
-      digitalWrite(LED, HIGH);
-    } else {
-      digitalWrite(LED, LOW);
-    }
+  float voltage = myData.data * (5.0/1023.0);
+  float alc = map(voltage, 0.1, 4.0, 0, 100);
+  if(alc > 100){
+    digitalWrite(LED, HIGH);
   } else {
     digitalWrite(LED, LOW);
   }
-  
 }
