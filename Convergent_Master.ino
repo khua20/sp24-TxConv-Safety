@@ -32,6 +32,12 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <esp_wifi.h> // only for esp_wifi_set_channel()
+#include <Arduino.h>
+#include <WiFi.h>
+#include <esp_now.h>
+#include <Arduino_JSON.h>
+#include "ESPAsyncWebServer.h"
+#include "time.h"
 
 // Global copy of slave
 esp_now_peer_info_t slave;
@@ -40,6 +46,10 @@ esp_now_peer_info_t slave;
 #define DELETEBEFOREPAIR 0
 
 const int sensorPin = A0;
+const char* ssid = "utexas-iot";
+const char* password = "46608918652253881940";
+
+AsyncWebServer server(80);
 
 // Init ESP Now with fallback
 void InitESPNow() {
@@ -222,7 +232,16 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 }
 
 void setup() {
+  
   Serial.begin(115200);
+  WiFi.begin(ssid, password);
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.print("/nWiFi connected at IP address");
+  Serial.println(WiFi.localIP());
+  pinMode(18, INPUT);
   //Set device in STA mode to begin with
   WiFi.mode(WIFI_STA);
   esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
@@ -235,6 +254,34 @@ void setup() {
   // Once ESPNow is successfully Init, we will register for Send CB to
   // get the status of Trasnmitted packet
   esp_now_register_send_cb(OnDataSent);
+
+  server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+      //printLocalTime();
+        int sensorValue = analogRead(sensorPin);
+        long timestamp = millis();
+
+        float voltage = sensorValue * (5.0/1023.0);
+
+      float alc = map(voltage, 0.1, 4.0, 0, 100);
+
+      Serial.print(alc);
+      Serial.println("ppm");
+
+        JSONVar data;
+        data["time"] = timestamp;
+        data["value"] = alc;
+        String jsonData = JSON.stringify(data);
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        response->addHeader("Access-Control-Allow-Origin", "*");
+        
+       // request->send(200, "application/json", jsonData);
+       response->print(jsonData);
+       request->send(response);
+        
+  });
+
+  server.begin();
+  Serial.println("Web server started");
 }
 
 void loop() {
