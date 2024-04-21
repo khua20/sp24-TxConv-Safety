@@ -46,6 +46,7 @@ const int button = 22;
 float alc;
 float voltage;
 const int LED = 23;
+const int buttonState = 22;
 
 AsyncWebServer server(80);
 
@@ -91,6 +92,7 @@ void setup() {
   // get recv packer info.
   esp_now_register_recv_cb(OnDataRecv);
   pinMode(LED, OUTPUT); 
+  pinMode(buttonPin, INPUT);
 
   // WiFi.begin(ssid, password);
   // while(WiFi.status() != WL_CONNECTED) {
@@ -139,7 +141,14 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 }
 
 void loop() {
-  if (alc >= 5){
-    digitalWrite(LED, HIGH);
+  buttonState = digitalRead(buttonPin);
+  if (alc >= 400){
+    if(buttonState == HIGH){
+      digitalWrite(ledPin, HIGH);
+    } else {
+      digitalWrite(ledPin, LOW);
+    }
+  } else {
+    digitalWrite(ledPin, LOW);
   }
 }
