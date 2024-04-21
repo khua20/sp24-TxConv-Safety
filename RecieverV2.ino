@@ -1,109 +1,145 @@
-/*********
-  Ashwin Prakash
-  
-*********/
+/**
+   ESPNOW - Basic communication - Slave
+   Date: 26th September 2017
+   Author: Arvind Ravulavaru <https://github.com/arvindr21>
+   Purpose: ESPNow Communication between a Master ESP32 and a Slave ESP32
+   Description: This sketch consists of the code for the Slave module.
+   Resources: (A bit outdated)
+   a. https://espressif.com/sites/default/files/documentation/esp-now_user_guide_en.pdf
+   b. http://www.esploradores.com/practica-6-conexion-esp-now/
+
+   << This Device Slave >>
+
+   Flow: Master
+   Step 1 : ESPNow Init on Master and set it in STA mode
+   Step 2 : Start scanning for Slave ESP32 (we have added a prefix of `slave` to the SSID of slave for an easy setup)
+   Step 3 : Once found, add Slave as peer
+   Step 4 : Register for send callback
+   Step 5 : Start Transmitting data from Master to Slave
+
+   Flow: Slave
+   Step 1 : ESPNow Init on Slave
+   Step 2 : Update the SSID of Slave with a prefix of `slave`
+   Step 3 : Set Slave in AP mode
+   Step 4 : Register for receive callback and wait for data
+   Step 5 : Once data arrives, print it in the serial monitor
+
+   Note: Master and Slave have been defined to easily understand the setup.
+         Based on the ESPNOW API, there is no concept of Master and Slave.
+         Any devices can act as master or salve.
+*/
 
 #include <esp_now.h>
 #include <WiFi.h>
-
+#include <Arduino.h>
+#include <esp_now.h>
 #include <Arduino_JSON.h>
 #include "ESPAsyncWebServer.h"
+#include "time.h"
+
 
 const char* ssid = "utexas-iot";
-const char* password = "";
+const char* password = "10443425164340431734";
 
-const int LED = 23;
-const int buttonPin = 2;
-const int buttonState = 0;  // variable for reading the pushbutton status
+#define CHANNEL 1
+const int button = 22;
 float alc;
+float voltage;
+const int LED = 23;
 
-JSONVar board;
 AsyncWebServer server(80);
-AsyncEventSource events("/events");
 
-//Structure example to receive data
-//Must match the sender structure
-typedef struct test {
-  int data;
-} test;
-
-//Create a struct_message called myData
-test myData;
-
-esp_now_peer_info_t peerInfo;
-
-uint8_t broadcastAddress[] = {0x08, 0xD1, 0xF9, 0xE8, 0xF4, 0xA0 } ; 
-
-//callback function that will be executed when data is received
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&myData, incomingData, sizeof(myData));
-  float voltage = myData.data * (5.0/1023.0);
-  alc = map(voltage, 0.1, 4.0, 0, 100);
-  Serial.print("Bytes received: ");
-  Serial.println(len);
-  Serial.print("x: ");
-  Serial.println(alc);
-  Serial.println(*mac);
+// Init ESP Now with fallback
+void InitESPNow() {
+  WiFi.disconnect();
+  if (esp_now_init() == ESP_OK) {
+    Serial.println("ESPNow Init Success");
+  }
+  else {
+    Serial.println("ESPNow Init Failed");
+    // Retry InitESPNow, add a counte and then restart?
+    // InitESPNow();
+    // or Simply Restart
+    ESP.restart();
+  }
 }
 
+// config AP SSID
+void configDeviceAP() {
+  const char *SSID = "Slave_1";
+  bool result = WiFi.softAP(SSID, "Slave_1_Password", CHANNEL, 0);
+  if (!result) {
+    Serial.println("AP Config failed.");
+  } else {
+    Serial.println("AP Config Success. Broadcasting with AP: " + String(SSID));
+    Serial.print("AP CHANNEL "); Serial.println(WiFi.channel());
+  }
+}
 
 void setup() {
-  //Initialize Serial Monitor
-
-  Serial.begin(9600);
-  
-
-  pinMode(LED, OUTPUT);
-  
-  //Set device as a Wi-Fi Station
-  WiFi.mode(WIFI_STA);
-
-  //Init ESP-NOW
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
-    return;
-
-  }
-
-
-  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-  peerInfo.channel = 0;  
-  peerInfo.encrypt = false;       
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer"); // handle errors
-    return;
-  }
-  
+  Serial.begin(115200);
+  Serial.println("ESPNow/Basic/Slave Example");
+  //Set device in AP mode to begin with
+  WiFi.mode(WIFI_AP);
+  // configure device AP mode
+  configDeviceAP();
+  // This is the mac address of the Slave in AP Mode
+  Serial.print("AP MAC: "); Serial.println(WiFi.softAPmacAddress());
+  // Init ESPNow with a fallback logic
+  InitESPNow();
   // Once ESPNow is successfully Init, we will register for recv CB to
-  // get recv packer info
+  // get recv packer info.
   esp_now_register_recv_cb(OnDataRecv);
+  pinMode(LED, OUTPUT); 
 
-  Serial.print(WiFi.macAddress());
+  // WiFi.begin(ssid, password);
+  // while(WiFi.status() != WL_CONNECTED) {
+  //   delay(500);
+  //   Serial.print(".");
+  // }
+  // Serial.print("/nWiFi connected at IP address");
+  // Serial.println(WiFi.localIP());
 
-  /*Serial.print("Connecting to ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  // Print local IP address and start web server
-  Serial.println("");
-  Serial.println("WiFi connected.");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-  Serial.print("Wi-Fi Channel: ");
-  Serial.println(WiFi.channel());
+  // // Initialize web server
+  //   server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+  //     //printLocalTime();
+  //       long timestamp = millis();
 
-  */
+  //     Serial.print(alc);
+  //     Serial.println("ppm");
+
+  //       JSONVar data;
+  //       data["time"] = timestamp;
+  //       data["value"] = alc;
+  //       String jsonData = JSON.stringify(data);
+  //       AsyncResponseStream *response = request->beginResponseStream("application/json");
+  //       response->addHeader("Access-Control-Allow-Origin", "*");
+        
+  //      // request->send(200, "application/json", jsonData);
+  //      response->print(jsonData);
+  //      request->send(response);
+        
+  //   });
+
+  //   server.begin();
+  //   Serial.println("Web server started");
 }
- 
+
+// callback when data is recv from Master
+void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+  char macStr[18];
+  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  Serial.print("Last Packet Recv from: "); Serial.println(macStr);
+  Serial.print("Last Packet Recv Data: "); Serial.println(*data * 16);
+  voltage = *data * 16 * (5.0/1023.0);
+  alc = map(voltage, 0.1, 4.0, 0, 100);
+  Serial.print("Last Packet Recv PPM: "); Serial.println(alc);
+  Serial.println("");
+}
+
 void loop() {
-  float voltage = myData.data * (5.0/1023.0);
-  float alc = map(voltage, 0.1, 4.0, 0, 100);
-  if(alc > 100){
+  if (alc >= 5){
     digitalWrite(LED, HIGH);
-  } else {
-    digitalWrite(LED, LOW);
   }
 }
